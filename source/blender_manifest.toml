@@ -1,0 +1,15 @@
+schema_version = "1.0.0"
+id = "decal_material_transfer"
+version = "1.0.0"
+name = "Decal Material Transfer"
+tagline = "Transfer base material to normal only decal"
+maintainer = "Victor Chedeville <victor.ched@gmail.com>"
+type = "add-on"
+# website = "https://extensions.blender.org/add-ons/my-example-package/"
+# # https://docs.blender.org/manual/en/dev/advanced/extensions/tags.html
+# tags = ["Animation", "Sequencer"]
+blender_version_min = "4.2.0"
+license = ["SPDX:GPL-3.0-or-later"]
+
+[build]
+paths_exclude_pattern = ["__pycache__/", "/.git/", "/*.zip"]
