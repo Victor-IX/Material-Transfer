@@ -16,13 +16,25 @@ class OBJECT_OT_add_data_transfer(bpy.types.Operator):
                         child.data.uv_layers.new(name="MaterialTransfer")
                         self.report({"INFO"}, f"UV map 'MaterialTransfer' added to {child.name}")
 
-                    child.data.uv_layers.active_index = 0
-                    tmpuvmap = child.data.uv_layers.active
-                    tmpuvmap_name = tmpuvmap.name
+                    index_0 = child.data.uv_layers[0]
 
-                    newuvmap = child.data.uv_layers.new()
-                    child.data.uv_layers.remove(tmpuvmap)
-                    newuvmap.name = tmpuvmap_name
+                    max_repetitions = 50
+                    counter = 0
+
+                    # Ensure that index 0 is the transfer UV map
+                    while "MaterialTransfer" not in index_0.name:
+                        if counter >= max_repetitions:
+                            self.report({"WARNING"}, "Max repetitions reached. Exiting loop.")
+                            break
+                        child.data.uv_layers.active_index = 0
+                        tmpuvmap = child.data.uv_layers.active
+                        tmpuvmap_name = tmpuvmap.name
+
+                        child.data.uv_layers.remove(tmpuvmap)
+                        newuvmap = child.data.uv_layers.new(name=tmpuvmap_name)
+                        index_0 = newuvmap
+
+                        counter += 1
 
                     if not has_modifier:
                         modifier = child.modifiers.new(name="N_Decal", type="DATA_TRANSFER")
