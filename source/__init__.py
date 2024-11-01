@@ -7,9 +7,29 @@ class OBJECT_OT_add_data_transfer(bpy.types.Operator):
     bl_description = "Select the Main object, the base material will be transferred to all child decal objects"
 
     def execute(self, context):
+        main_texture_group = None
+
         for obj in bpy.context.selected_objects:
+            # Get the main texture group
+            if not obj.material_slots:
+                self.report({"ERROR"}, "Object has no material slots")
+                return {"CANCELLED"}
+            for mat_slot in obj.material_slots:
+                material = mat_slot.material
+                if material and material.use_nodes:
+                    for node in material.node_tree.nodes:
+                        if node.type == "GROUP" and "materialtransfer" in node.node_tree.name.lower():
+                            main_texture_group = node.node_tree.name
+                else:
+                    self.report({"ERROR"}, "Material has no nodes")
+                    return {"CANCELLED"}
+            if not main_texture_group:
+                self.report({"ERROR"}, "No main texture group found")
+                return {"CANCELLED"}
+
+            # Child Iteration
             for child in obj.children:
-                if "Decal" in child.name and child.type == "MESH":
+                if "decal" in child.name.lower() and child.type == "MESH":
                     has_modifier = any(mod.type == "DATA_TRANSFER" and mod.name == "N_Decal" for mod in child.modifiers)
 
                     if "MaterialTransfer" not in child.data.uv_layers:
@@ -29,11 +49,9 @@ class OBJECT_OT_add_data_transfer(bpy.types.Operator):
                         child.data.uv_layers.active_index = 0
                         tmpuvmap = child.data.uv_layers.active
                         tmpuvmap_name = tmpuvmap.name
-
                         child.data.uv_layers.remove(tmpuvmap)
-                        newuvmap = child.data.uv_layers.new(name=tmpuvmap_name)
-                        index_0 = newuvmap
-
+                        child.data.uv_layers.new(name=tmpuvmap_name)
+                        index_0 = child.data.uv_layers[0]
                         counter += 1
 
                     if not has_modifier:
@@ -51,6 +69,22 @@ class OBJECT_OT_add_data_transfer(bpy.types.Operator):
                             {"INFO"},
                             f"'{child.name}' already has the 'N_Decal' modifier",
                         )
+
+                    # Transfer the material
+                    if not child.material_slots:
+                        self.report({"ERROR"}, "Object has no material slots")
+                        return {"CANCELLED"}
+                    for mat_slot in child.material_slots:
+                        material = mat_slot.material
+                        if material and material.use_nodes:
+                            for node in material.node_tree.nodes:
+                                if node.type == "GROUP" and "decal" in node.node_tree.name.lower():
+                                    new_node = material.node_tree.nodes.new(type="ShaderNodeGroup")
+                                    new_node.node_tree = bpy.data.node_groups[main_texture_group]
+                        else:
+                            self.report({"ERROR"}, "Material has no nodes")
+                            return {"CANCELLED"}
+
                 else:
                     self.report(
                         {"INFO"},
