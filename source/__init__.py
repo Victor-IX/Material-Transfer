@@ -74,16 +74,41 @@ class OBJECT_OT_add_data_transfer(bpy.types.Operator):
                     if not child.material_slots:
                         self.report({"ERROR"}, "Object has no material slots")
                         return {"CANCELLED"}
+
                     for mat_slot in child.material_slots:
                         material = mat_slot.material
                         if material and material.use_nodes:
-                            for node in material.node_tree.nodes:
-                                if node.type == "GROUP" and "decal" in node.node_tree.name.lower():
-                                    new_node = material.node_tree.nodes.new(type="ShaderNodeGroup")
-                                    new_node.node_tree = bpy.data.node_groups[main_texture_group]
-                        else:
-                            self.report({"ERROR"}, "Material has no nodes")
-                            return {"CANCELLED"}
+                            node_tree = material.node_tree
+
+                            main_material_group = material.node_tree.nodes.new(type="ShaderNodeGroup")
+                            main_material_group.node_tree = bpy.data.node_groups[main_texture_group]
+
+                            for node in node_tree.nodes:
+                                if node.type == "GROUP":
+                                    if node.node_tree.name == ".subset.decal_group":
+                                        decal_group = node
+
+                            if main_material_group and decal_group:
+                                # output_socket = None
+                                # input_socket = None
+
+                                # for item in main_material_group.interface.items_tree:
+                                #     if item.item_type == "SOCKET" and item.in_out == "OUTPUT" and item.name == "BC":
+                                #         output_socket = item
+
+                                # for item in decal_group.interface.items_tree:
+                                #     if (
+                                #         item.item_type == "SOCKET"
+                                #         and item.in_out == "INPUT"
+                                #         and item.name == "Material Base Color"
+                                #     ):
+                                #         input_socket = item
+
+                                node_tree = material.node_tree.links
+                                node_tree.new(
+                                    main_material_group.outputs["BC"],
+                                    decal_group.inputs["Material Base Color"],
+                                )
 
                 else:
                     self.report(
